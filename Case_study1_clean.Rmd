@@ -1,0 +1,244 @@
+---
+title: "Case_Study1_cleaned"
+output:
+  pdf_document: default
+  html_document: default
+date: "2025-01-12"
+---
+
+###Introduction
+Welcome to the Cyclistic bike-share analysis case study! In this case study, you work for a
+fictional company, Cyclistic, along with some key team members. In order to answer the
+business questions, follow the steps of the data analysis process: Ask, Prepare, Process,
+Analyze, Share, and Act. Along the way, the Case Study Roadmap tables — including guiding
+questions and key tasks — will help you stay on the right path.
+###Scenario
+You are a junior data analyst working on the marketing analyst team at Cyclistic, a bike-share
+company in Chicago. The director of marketing believes the company’s future success
+depends on maximizing the number of annual memberships. Therefore, your team wants to
+understand how casual riders and annual members use Cyclistic bikes differently. From these
+insights, your team will design a new marketing strategy to convert casual riders into annual
+members. But first, Cyclistic executives must approve your recommendations, so they must be
+backed up with compelling data insights and professional data visualizations.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Analyze**
+
+### **1. Combine Columns and Data**
+
+```{r combine-columns}
+# Set working directory
+setwd("/Users/giuliaribeiro/Documents/R_course/Case_Study1/")
+
+# Import monthly datasets
+library(dplyr)
+library(readr)
+library(lubridate)
+
+data_dir <- "./monthly_files/"
+file_list <- list.files(path = data_dir, pattern = "*.csv", full.names = TRUE)
+
+# Combine datasets
+data_combined <- file_list %>%
+  lapply(read_csv) %>%
+  bind_rows() %>%
+  mutate(month = month(started_at),
+         month_name = month(started_at, label = TRUE, abbr = FALSE))
+
+# Preview combined data
+glimpse(data_combined)
+```
+### **2. Clean and Transform Data**
+
+I calculate the percentage of missing data on the columns to understand the strategy to be adopted. I saw that for station names 18% was missing data, so in that case to not miss a lot of data I just replaced NA for Unknown. In the case of end_lat and end_long it was only 0.1%, so In this case I dropped the rows with NA.
+
+
+```{r}
+# Calculate the total number of rows in the dataset
+total_rows <- nrow(data_combined)
+
+# Calculate the number of missing values for each column
+missing_values <- colSums(is.na(data_combined))
+
+# Calculate the percentage of missing values for each column
+missing_percentage <- (missing_values / total_rows) * 100
+
+# Combine the results into a data frame for better readability
+missing_summary <- data.frame(
+  Column = names(missing_values),
+  Missing_Count = missing_values,
+  Missing_Percentage = round(missing_percentage, 1) # Rounded to one decimal place
+)
+
+# Print the summary
+print(missing_summary)
+
+```
+
+```{r clean-transform}
+# Handle missing values
+library(tidyr)
+data_cleaned <- data_combined %>%
+  mutate(
+    start_station_name = replace_na(start_station_name, "Unknown"),
+    start_station_id = replace_na(start_station_id, "Unknown"),
+    end_station_name = replace_na(end_station_name, "Unknown"),
+    end_station_id = replace_na(end_station_id, "Unknown"),
+    ride_length = as.numeric(difftime(ended_at, started_at, units = "mins")),
+    day_of_week = wday(started_at, label = TRUE)
+  ) %>%
+  drop_na(end_lat, end_lng) # Drop rows with critical missing values
+
+# Preview cleaned data
+glimpse(data_cleaned)
+```
+
+I added two new columns that I think will give usefull insights in this analysis:
+ride_length and day_of_week
+
+### **3. Descriptive Analysis**
+
+```{r}
+# Analyze ride length (e.g., by month)
+monthly_summary <- data_cleaned %>%
+  group_by(month, member_casual) %>%
+  summarize(
+    avg_ride_length = mean(ride_length, na.rm = TRUE),
+    total_rides = n(),
+    .groups = "drop"
+  )
+
+# Print summary
+print(monthly_summary)
+
+# Visualize ride length over the months
+library(ggplot2)
+
+ggplot(monthly_summary, aes(x = month, y = avg_ride_length, color = member_casual)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Average Ride Length Over Months", x = "Month", y = "Average Ride Length (mins)") +
+  scale_x_continuous(breaks = 1:12, labels = month.name) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+```{r descriptive-analysis}
+# Calculate mean and max ride length
+mean_ride_length <- mean(data_cleaned$ride_length, na.rm = TRUE)
+max_ride_length <- max(data_cleaned$ride_length, na.rm = TRUE)
+
+# Convert day_of_week to character (remove ordering)
+data_cleaned <- data_cleaned %>%
+  mutate(day_of_week = as.character(day_of_week))
+
+# Calculate mode of day_of_week
+day_mode <- data_cleaned %>%
+  group_by(day_of_week) %>%
+  summarize(count = n(), .groups = "drop") %>%  # Ensure proper grouping behavior
+  arrange(desc(count)) %>%
+  slice_head(n = 1) %>%  # Select the first row explicitly
+  pull(day_of_week)      # Extract the mode value
+
+print(day_mode)
+
+list(mean_ride_length = mean_ride_length, max_ride_length = max_ride_length, day_mode = day_mode)
+
+```
+### **4. Pivot Table Analysis**
+
+```{r pivot-analysis}
+# Average ride length by member type
+data_summary <- data_cleaned %>%
+  group_by(member_casual) %>%
+  summarize(avg_ride_length = mean(ride_length, na.rm = TRUE))
+
+# Average ride length by day of week
+data_by_day <- data_cleaned %>%
+  group_by(day_of_week, member_casual) %>%
+  summarize(avg_ride_length = mean(ride_length, na.rm = TRUE))
+
+# Count rides by day of week
+ride_count <- data_cleaned %>%
+  group_by(day_of_week, member_casual) %>%
+  summarize(total_rides = n())
+
+list(summary = data_summary, by_day = data_by_day, ride_count = ride_count)
+```
+
+### **5. Seasonal Analysis**
+
+```{r seasonal-analysis}
+# Filter for summer months (June, July, August)
+summer_data <- data_cleaned %>%
+  filter(month(started_at) %in% c(6, 7, 8))
+
+# Descriptive stats for summer
+summer_stats <- summer_data %>%
+  group_by(member_casual) %>%
+  summarize(
+    avg_ride_length = mean(ride_length, na.rm = TRUE),
+    total_rides = n()
+  )
+
+summer_stats
+```
+### **6. Visualization**
+
+```{r visualizations, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+
+# Plot 1: Average Ride Length by Member Type
+ggplot(data_summary, aes(x = member_casual, y = avg_ride_length, fill = member_casual)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Ride Length by Member Type", x = "User Type", y = "Average Ride Length (mins)") +
+  theme_minimal()
+
+# Plot 2: Total Rides by Day of Week and Member Type
+ggplot(ride_count, aes(x = day_of_week, y = total_rides, fill = member_casual)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Rides by Day of Week and Member Type", x = "Day of Week", y = "Total Rides") +
+  theme_minimal()
+
+# Plot 3: Average Ride Length by Day of Week and Member Type
+ggplot(data_by_day, aes(x = day_of_week, y = avg_ride_length, color = member_casual, group = member_casual)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(title = "Average Ride Length by Day of Week and Member Type", x = "Day of Week", y = "Average Ride Length (mins)") +
+  theme_minimal()
+```
+
+### **7. Export Summary File**
+
+```{r export-summary}
+# Export cleaned and summarized data
+write_csv(data_cleaned, "cleaned_cyclistic_data.csv")
+write_csv(data_summary, "ride_length_summary.csv")
+write_csv(data_by_day, "ride_length_by_day.csv")
+```
+
+
+### **8. Summary Narrative**
+
+#### Insights from Analysis
+
+1. **Key Trends:**
+   - Casual riders consistently have longer average ride lengths compared to members, particularly during weekends and summer months.
+   - Members primarily use bikes during weekdays, suggesting frequent utility-focused usage such as commuting.
+
+2. **Seasonal Variations:**
+   - Summer months show a significant spike in ridership, especially among casual users, indicating a strong link to leisure activities.
+
+3. **Most Popular Days:**
+   - Saturdays dominate as the most popular day for riding, particularly for casual users.
+
+#### Implications for Marketing Strategy
+
+- **Targeting Casual Riders:** Highlight benefits of membership during summer and weekends to encourage conversions. For example, offer discounts for summer memberships.
+- **Member Retention:** Reinforce the utility and cost-effectiveness of membership for regular commuters.
+- **Seasonal Campaigns:** Plan promotions during peak summer months to attract more casual users.
+
