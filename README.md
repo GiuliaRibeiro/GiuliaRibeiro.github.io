@@ -36,9 +36,9 @@ While my background is rooted in bioinformatics and molecular biology, I am acti
 ## Get in Touch
 I’m always excited to collaborate on projects merging biology and data science, as well as exploring opportunities in data analysis. Let’s connect!
 
-- 🌐 [Website](https://giuliamagriribeiro.wordpress.com/)
-- 💼 [LinkedIn](https://www.linkedin.com/in/giulia-magri-ribeiro-bioinformatician)
-- 📧 [Email Me](mailto:giuliamagriribeiro@gmail.com)
+- 🌐 [https://giuliamagriribeiro.wordpress.com/](https://giuliamagriribeiro.wordpress.com/)
+- 💼 [https://www.linkedin.com/in/giulia-magri-ribeiro-bioinformatician](https://www.linkedin.com/in/giulia-magri-ribeiro-bioinformatician)
+- 📧 [Email: giuliamagriribeiro@gmail.com](mailto:giuliamagriribeiro@gmail.com)
 
 ---
 Thank you for visiting my portfolio on GitHub!
