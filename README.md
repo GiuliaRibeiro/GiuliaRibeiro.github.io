@@ -33,6 +33,12 @@ While my background is rooted in bioinformatics and molecular biology, I am acti
 - **Data visualization** for genomics insights.
 - Research on **machine learning applications** in biological data.
 
+## Case Studies and Projects
+I plan to share the works and case studies that I create on this platform. Here is a current case study:
+
+- **Case Study 1: Cyclistic Bike-Share Analysis**
+  - This study focuses on exploring the differences in bike usage patterns between casual riders and annual members. Using a data analysis process that includes asking questions, preparing, processing, analyzing, and sharing data, the study provides actionable insights for improving marketing strategies and increasing annual memberships.
+
 ## Get in Touch
 I’m always excited to collaborate on projects merging biology and data science, as well as exploring opportunities in data analysis. Let’s connect!
 
